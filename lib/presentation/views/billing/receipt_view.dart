@@ -9,6 +9,7 @@ import '../../../domain/entities/sale.dart';
 import '../../providers/billing_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/app_badge.dart';
+import '../../widgets/app_qr_widget.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_card.dart';
 import '../main_navigation_shell.dart';
@@ -420,6 +421,53 @@ class _ReceiptViewState extends State<ReceiptView> {
                     const SizedBox(height: 4),
                     _buildSummaryRow('Cash Tendered', CurrencyFormatter.format(sale.cashTendered)),
                     _buildSummaryRow('Change Returned', CurrencyFormatter.format(sale.changeReturned), textColor: AppColors.success),
+                  ],
+
+                  if (cfg.showQrCode && profile.upiVpa.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.canvas,
+                        borderRadius: BorderRadius.circular(AppDimens.radiusMedium),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: AppQrWidget(
+                              data: 'upi://pay?pa=${profile.upiVpa}&pn=${Uri.encodeComponent(profile.restaurantName.isNotEmpty ? profile.restaurantName : "Fundamentzz Store")}&am=${sale.totalAmount.toStringAsFixed(2)}&cu=INR&tn=${Uri.encodeComponent('Bill ${sale.invoiceNumber}')}',
+                              size: 130,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Scan with any UPI App to Pay',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.accentNavy,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'UPI ID: ${profile.upiVpa} • ${CurrencyFormatter.format(sale.totalAmount)}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.secondaryText,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
 
                   if (cfg.showFooter && profile.receiptFooter.isNotEmpty) ...[

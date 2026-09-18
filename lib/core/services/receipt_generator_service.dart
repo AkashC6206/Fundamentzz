@@ -238,6 +238,37 @@ class ReceiptGeneratorService {
                 _buildTotalRow('Change Returned:', '${profile.currencySymbol} ${sale.changeReturned.toStringAsFixed(2)}', font, fontBold),
               ],
 
+              // QR Code for UPI Payment
+              if (cfg.showQrCode && profile.upiVpa.isNotEmpty) ...[
+                pw.SizedBox(height: 10),
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(6),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey400, width: 0.5),
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                  ),
+                  child: pw.Column(
+                    children: [
+                      pw.BarcodeWidget(
+                        barcode: pw.Barcode.qrCode(),
+                        data: 'upi://pay?pa=${profile.upiVpa}&pn=${Uri.encodeComponent(profile.restaurantName.isNotEmpty ? profile.restaurantName : "Fundamentzz Store")}&am=${sale.totalAmount.toStringAsFixed(2)}&cu=INR&tn=${Uri.encodeComponent('Bill ${sale.invoiceNumber}')}',
+                        width: 75,
+                        height: 75,
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text(
+                        'Scan & Pay via UPI',
+                        style: pw.TextStyle(font: fontBold, fontSize: 9),
+                      ),
+                      pw.Text(
+                        profile.upiVpa,
+                        style: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.grey700),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               if (cfg.showFooter && profile.receiptFooter.isNotEmpty) ...[
                 pw.SizedBox(height: 12),
                 pw.Text(

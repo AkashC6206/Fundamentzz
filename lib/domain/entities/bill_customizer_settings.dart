@@ -15,6 +15,7 @@ class BillCustomizerSettings {
   final bool showFooter;
   final bool showOrderTicketKot;
   final bool cutPaper;
+  final bool showQrCode;
 
   const BillCustomizerSettings({
     this.showBusinessName = true,
@@ -33,6 +34,7 @@ class BillCustomizerSettings {
     this.showFooter = true,
     this.showOrderTicketKot = true,
     this.cutPaper = true,
+    this.showQrCode = true,
   });
 
   BillCustomizerSettings copyWith({
@@ -52,6 +54,7 @@ class BillCustomizerSettings {
     bool? showFooter,
     bool? showOrderTicketKot,
     bool? cutPaper,
+    bool? showQrCode,
   }) {
     return BillCustomizerSettings(
       showBusinessName: showBusinessName ?? this.showBusinessName,
@@ -70,6 +73,7 @@ class BillCustomizerSettings {
       showFooter: showFooter ?? this.showFooter,
       showOrderTicketKot: showOrderTicketKot ?? this.showOrderTicketKot,
       cutPaper: cutPaper ?? this.cutPaper,
+      showQrCode: showQrCode ?? this.showQrCode,
     );
   }
 
@@ -92,6 +96,7 @@ class BillCustomizerSettings {
       'show_footer': showFooter ? 1 : 0,
       'show_order_ticket_kot': showOrderTicketKot ? 1 : 0,
       'cut_paper': cutPaper ? 1 : 0,
+      'show_qr_code': showQrCode ? 1 : 0,
     };
   }
 
@@ -125,6 +130,7 @@ class BillCustomizerSettings {
       showFooter: _parseBool(map['show_footer']),
       showOrderTicketKot: _parseBool(map['show_order_ticket_kot']),
       cutPaper: _parseBool(map['cut_paper']),
+      showQrCode: _parseBool(map['show_qr_code']),
     );
   }
 }

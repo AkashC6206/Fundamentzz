@@ -11,6 +11,8 @@ import '../../providers/inventory_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../main_navigation_shell.dart';
 import '../settings/business_profile_view.dart';
+import '../../../core/services/activation_service.dart';
+import '../activation/activation_view.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -73,12 +75,20 @@ class _SplashViewState extends State<SplashView> with SingleTickerProviderStateM
     final appDataService = sl<AppDataStorageService>();
     final isSetupDone = await appDataService.isOneTimeSetupCompleted();
 
+    // 5. Check if one-time owner activation has been completed
+    final activationService = sl<ActivationService>();
+    final isActivated = await activationService.isActivated();
+
     await Future.delayed(const Duration(milliseconds: 1200));
 
     if (mounted) {
-      final Widget target = isSetupDone
+      final Widget mainTarget = isSetupDone
           ? const MainNavigationShell()
           : const BusinessProfileView(isOneTimeSetup: true);
+
+      final Widget target = isActivated
+          ? mainTarget
+          : ActivationView(onSuccessTarget: mainTarget);
 
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(

@@ -12,6 +12,9 @@ import '../../widgets/app_search_bar.dart';
 import '../../widgets/custom_card.dart';
 import 'add_edit_product_view.dart';
 import 'category_manager_view.dart';
+import 'widgets/menu_import_dialog.dart';
+import '../../../core/di/injection_container.dart';
+import '../../../core/services/menu_transfer_service.dart';
 
 class InventoryView extends StatefulWidget {
   const InventoryView({super.key});
@@ -58,6 +61,103 @@ class _InventoryViewState extends State<InventoryView> {
     });
   }
 
+  Future<void> _exportMenu() async {
+    final transferService = sl<MenuTransferService>();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Generating menu export ZIP...'),
+        duration: Duration(milliseconds: 1000),
+      ),
+    );
+
+    final res = await transferService.exportMenuToZip();
+
+    if (!mounted) return;
+
+    if (res.isSuccess) {
+      final export = res.data!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✓ Menu exported: ${export.productsCount} items, ${export.imagesCount} images.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res.failure?.message ?? 'Failed to export menu'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
+  }
+
+  Future<void> _importMenu() async {
+    final transferService = sl<MenuTransferService>();
+    final inspectRes = await transferService.pickAndInspectMenuZip();
+
+    if (!mounted) return;
+
+    if (!inspectRes.isSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(inspectRes.failure?.message ?? 'Error reading menu backup ZIP'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
+    final inspection = inspectRes.data;
+    if (inspection == null) {
+      // User cancelled picker
+      return;
+    }
+
+    // Show confirmation dialog (replace vs merge)
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => MenuImportDialog(
+        inspection: inspection,
+        onConfirm: ({required bool replaceExisting}) async {
+          final applyRes = await transferService.applyMenuImport(
+            inspection: inspection,
+            replaceExisting: replaceExisting,
+          );
+
+          if (applyRes.isSuccess) {
+            final summary = applyRes.data!;
+            if (mounted) {
+              final inv = context.read<InventoryProvider>();
+              final billing = context.read<BillingProvider>();
+              final messenger = ScaffoldMessenger.of(context);
+
+              await inv.init();
+              await billing.refreshCatalogue();
+              await billing.loadCategories();
+
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '✓ Successfully imported ${summary.productsImported} products, ${summary.categoriesImported} categories, and ${summary.imagesRestored} images.',
+                  ),
+                  backgroundColor: AppColors.success,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+          } else {
+            throw Exception(applyRes.failure?.message ?? 'Failed to apply import');
+          }
+        },
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      context.read<InventoryProvider>().init();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +179,36 @@ class _InventoryViewState extends State<InventoryView> {
             icon: const Icon(Icons.add_box, color: AppColors.primaryBlue),
             tooltip: 'Add New Product',
             onPressed: () => _openAddProduct(),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: AppColors.accentNavy),
+            tooltip: 'Menu Import / Export',
+            onSelected: (val) {
+              if (val == 'export') _exportMenu();
+              if (val == 'import') _importMenu();
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'export',
+                child: Row(
+                  children: [
+                    Icon(Icons.upload_file, size: 20, color: AppColors.primaryBlue),
+                    SizedBox(width: 10),
+                    Text('Export Menu (.zip)'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'import',
+                child: Row(
+                  children: [
+                    Icon(Icons.download_for_offline, size: 20, color: AppColors.success),
+                    SizedBox(width: 10),
+                    Text('Import Menu (.zip)'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

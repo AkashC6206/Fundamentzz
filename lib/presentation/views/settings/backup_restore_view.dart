@@ -10,6 +10,9 @@ import '../../providers/sales_history_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_card.dart';
+import '../../../core/di/injection_container.dart';
+import '../../../core/services/menu_transfer_service.dart';
+import '../inventory/widgets/menu_import_dialog.dart';
 
 class BackupRestoreView extends StatefulWidget {
   const BackupRestoreView({super.key});
@@ -21,6 +24,89 @@ class BackupRestoreView extends StatefulWidget {
 class _BackupRestoreViewState extends State<BackupRestoreView> {
   bool _isExporting = false;
   bool _isResetting = false;
+  bool _isMenuExporting = false;
+  bool _isMenuImporting = false;
+
+  Future<void> _exportMenuZip() async {
+    setState(() => _isMenuExporting = true);
+    final transferService = sl<MenuTransferService>();
+    final res = await transferService.exportMenuToZip();
+    setState(() => _isMenuExporting = false);
+
+    if (mounted) {
+      if (res.isSuccess) {
+        final exp = res.data!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✓ Menu exported: ${exp.productsCount} products, ${exp.imagesCount} images.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.failure?.message ?? 'Failed to export menu'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _importMenuZip() async {
+    setState(() => _isMenuImporting = true);
+    final transferService = sl<MenuTransferService>();
+    final inspectRes = await transferService.pickAndInspectMenuZip();
+    setState(() => _isMenuImporting = false);
+
+    if (!mounted) return;
+
+    if (!inspectRes.isSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(inspectRes.failure?.message ?? 'Error reading menu backup ZIP'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
+    final inspection = inspectRes.data;
+    if (inspection == null) return;
+
+    await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => MenuImportDialog(
+        inspection: inspection,
+        onConfirm: ({required bool replaceExisting}) async {
+          final applyRes = await transferService.applyMenuImport(
+            inspection: inspection,
+            replaceExisting: replaceExisting,
+          );
+
+          if (applyRes.isSuccess) {
+            final summary = applyRes.data!;
+            if (mounted) {
+              final messenger = ScaffoldMessenger.of(context);
+              await _refreshAllProviders();
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '✓ Menu imported: ${summary.productsImported} products, ${summary.imagesRestored} images restored.',
+                  ),
+                  backgroundColor: AppColors.success,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            }
+          } else {
+            throw Exception(applyRes.failure?.message ?? 'Failed to import menu');
+          }
+        },
+      ),
+    );
+  }
 
   Future<void> _exportBackup() async {
     setState(() => _isExporting = true);
@@ -146,6 +232,56 @@ class _BackupRestoreViewState extends State<BackupRestoreView> {
                     icon: Icons.share,
                     isLoading: _isExporting,
                     onPressed: _exportBackup,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Menu Catalogue Export & Import Card (ZIP)
+            CustomCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.folder_zip_outlined, color: AppColors.primaryBlue, size: 24),
+                      SizedBox(width: 10),
+                      Text(
+                        'Menu Catalogue Export & Import (ZIP)',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.accentNavy),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Export your food & drink categories, product items, prices, and dish photos into a single ZIP archive. You can easily share it or restore it onto any terminal.',
+                    style: TextStyle(fontSize: 12, color: AppColors.secondaryText, height: 1.4),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomButton(
+                          text: 'EXPORT MENU',
+                          icon: Icons.upload_file,
+                          isLoading: _isMenuExporting,
+                          onPressed: _exportMenuZip,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomButton(
+                          text: 'IMPORT MENU',
+                          icon: Icons.download_for_offline,
+                          variant: ButtonVariant.secondary,
+                          isLoading: _isMenuImporting,
+                          onPressed: _importMenuZip,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -138,7 +138,8 @@ class SqliteDataSource {
         show_cash_change INTEGER NOT NULL DEFAULT 1,
         show_footer INTEGER NOT NULL DEFAULT 1,
         show_order_ticket_kot INTEGER NOT NULL DEFAULT 1,
-        cut_paper INTEGER NOT NULL DEFAULT 1
+        cut_paper INTEGER NOT NULL DEFAULT 1,
+        show_qr_code INTEGER NOT NULL DEFAULT 1
       )
     ''');
     await db.insert('bill_customizer', {
@@ -159,7 +160,18 @@ class SqliteDataSource {
       'show_footer': 1,
       'show_order_ticket_kot': 1,
       'cut_paper': 1,
+      'show_qr_code': 1,
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
+
+    try {
+      final info = await db.rawQuery('PRAGMA table_info(bill_customizer)');
+      final columnNames = info.map((col) => col['name'] as String).toList();
+      if (!columnNames.contains('show_qr_code')) {
+        await db.execute('ALTER TABLE bill_customizer ADD COLUMN show_qr_code INTEGER NOT NULL DEFAULT 1');
+      }
+    } catch (e) {
+      debugPrint('DB table migration note (bill_customizer): $e');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {

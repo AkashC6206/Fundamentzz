@@ -255,6 +255,14 @@ class _BillCustomizerViewState extends State<BillCustomizerView> {
                       value: cfg.showCashChange,
                       onChanged: (val) => update((c) => c.copyWith(showCashChange: val)),
                     ),
+                    const Divider(height: 1),
+                    _buildToggleTile(
+                      icon: Icons.qr_code_2,
+                      title: 'Payment / UPI QR Code',
+                      subtitle: 'Print dynamic UPI QR code on receipt for instant customer payment',
+                      value: cfg.showQrCode,
+                      onChanged: (val) => update((c) => c.copyWith(showQrCode: val)),
+                    ),
                   ],
                 ),
               ),
@@ -507,6 +515,33 @@ class _BillCustomizerViewState extends State<BillCustomizerView> {
                   const SizedBox(height: 3),
                   _buildPreviewSummaryRow('Cash Tendered', '$currency 600.00'),
                   _buildPreviewSummaryRow('Change Returned', '$currency 75.00', textColor: AppColors.success),
+                ],
+
+                if (cfg.showQrCode) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.canvas,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.qr_code_2, size: 54, color: AppColors.accentNavy),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Scan to Pay via UPI',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.accentNavy),
+                        ),
+                        Text(
+                          profile.upiVpa.isNotEmpty ? profile.upiVpa : 'store@upi',
+                          style: const TextStyle(fontSize: 9, color: AppColors.secondaryText),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
 
                 if (cfg.showFooter && profile.receiptFooter.isNotEmpty) ...[

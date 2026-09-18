@@ -25,10 +25,12 @@ import '../../presentation/providers/inventory_provider.dart';
 import '../../presentation/providers/sales_history_provider.dart';
 import '../../presentation/providers/settings_provider.dart';
 import '../database/demo_data_seeder.dart';
+import '../services/activation_service.dart';
 import '../services/app_data_storage_service.dart';
 import '../services/backup_restore_service.dart';
 import '../services/bluetooth_printer_service.dart';
 import '../services/image_service.dart';
+import '../services/menu_transfer_service.dart';
 import '../services/receipt_generator_service.dart';
 
 final sl = GetIt.instance;
@@ -41,6 +43,8 @@ Future<void> initDependencyInjection() async {
   sl.registerLazySingleton<DemoDataSeeder>(() => DemoDataSeeder(sl()));
 
   // 2. Services
+  sl.registerLazySingleton<ActivationService>(() => ActivationService());
+  sl.registerLazySingleton<MenuTransferService>(() => MenuTransferService(dataSource: sl()));
   sl.registerLazySingleton<AppDataStorageService>(() => AppDataStorageService());
   sl.registerLazySingleton<ImageService>(() => ImageService());
   sl.registerLazySingleton<ReceiptGeneratorService>(() => ReceiptGeneratorService());

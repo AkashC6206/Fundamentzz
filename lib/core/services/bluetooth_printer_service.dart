@@ -559,7 +559,16 @@ class BluetoothPrinterService {
       bytes += generator.hr();
     }
 
-    // 8. Footer Message (Directly under the divider without extra feed)
+    // 8. Payment QR Code
+    if (cfg.showQrCode && profile.upiVpa.isNotEmpty) {
+      final upiString = 'upi://pay?pa=${profile.upiVpa}&pn=${Uri.encodeComponent(profile.restaurantName.isNotEmpty ? profile.restaurantName : "Fundamentzz Store")}&am=${sale.totalAmount.toStringAsFixed(2)}&cu=INR&tn=${Uri.encodeComponent('Bill ${sale.invoiceNumber}')}';
+      bytes += generator.text('Scan to Pay via UPI', styles: const PosStyles(align: PosAlign.center, bold: true));
+      bytes += generator.qrcode(upiString, size: QRSize.size4);
+      bytes += generator.text('UPI: ${profile.upiVpa}', styles: const PosStyles(align: PosAlign.center));
+      bytes += generator.hr();
+    }
+
+    // 9. Footer Message (Directly under the divider without extra feed)
     if (cfg.showFooter && profile.receiptFooter.isNotEmpty) {
       bytes += generator.text(profile.receiptFooter, styles: const PosStyles(align: PosAlign.center));
     }
